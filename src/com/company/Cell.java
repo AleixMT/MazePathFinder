@@ -7,7 +7,7 @@ public class Cell {
      */
     private char operation;
 
-    public Cell(int value, char operation)
+    public Cell(char operation, int value)
     {
         this.value = value;
         this.operation = operation;
