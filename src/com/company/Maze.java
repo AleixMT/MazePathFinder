@@ -16,11 +16,11 @@ public class Maze {
             entryX, entryY,
             sizeX, sizeY;
 
-    public Maze()
+    public Maze(String textFile)
     {
         try
         {
-            BufferedReader bufferedReader = new BufferedReader(new FileReader("data/maze.txt"));
+            BufferedReader bufferedReader = new BufferedReader(new FileReader("data/" + textFile));
 
             String line = bufferedReader.readLine();
             String[] values = line.split(" "), cellValue;
@@ -58,9 +58,107 @@ public class Maze {
 
     }
 
+    /*
+     * Auxiliar function to deepcopy an array of booleans and return it.
+     * Should be static function but does not cause conflict if being instance method
+     */
+    public boolean[][] deepCopy(boolean[][] array2d)
+    {
+        boolean[][] newArray = new boolean[array2d.length][array2d[0].length];
+        for (int i = 0; i < array2d.length; i++)
+        {
+            for (int j = 0; j < array2d[0].length; j++)
+            {
+                newArray[i][j] = array2d[i][j];
+            }
+        }
+        return newArray;
+    }
+
+    /*
+     * Auxiliar function to calculate the euclidian distance between two cartesian 2d points.
+     * Should be static function but does not cause conflict if being instance method
+     */
     double euclideanDistance(int v1x, int v1y, int v2x, int v2y)
     {
         return Math.sqrt((double)((v1x - v2x) * (v1x - v2x) + (v1y - v2y) * (v1y - v2y)));
+    }
+
+    /*
+     * Recursive private function to locate all paths to find the exit in the maze
+     */
+    private void allPathsRec(int currentY, int currentX, List<CellAuxiliar> currentPath, int points, List<List<CellAuxiliar>> paths, boolean[][] visitedMatrix, WrapperInt stop)
+    {
+        if (exitX == currentX && exitY == currentY)  // If we reach the end of the maze, write down followed route and escape
+        {
+            currentPath.add(new CellAuxiliar(maze[currentY][currentX], currentY, currentX, euclideanDistance(currentX, currentY, exitX, exitY), maze[currentY][currentX].applyOperation(points)));  // Apuntem
+            paths.add(currentPath);  // Add this route to the paths list
+            System.out.println("\nTROBAT CAMÍ");
+            if (stop.getValue() == 1) stop.setValue(2);
+            return;  // End of recursivity because reached the exit
+        }
+        else
+        {
+            visitedMatrix[currentY][currentX] = true;  // Set current position as visited
+            points = maze[currentY][currentX].applyOperation(points);  // Update points using the value of the current cell
+            currentPath.add(new CellAuxiliar(maze[currentY][currentX], currentY, currentX, euclideanDistance(currentX, currentY, exitX, exitY), points));  // Add the current cell to the currentpath
+        }
+        if (points > 0)  // If we reach 0 points we can't move, so we will return the recursivity call
+        {  // Recursive cases
+            if (currentX + 1 < sizeX && !maze[currentY][currentX + 1].getOperation().equals("N") && !visitedMatrix[currentY][currentX + 1] && stop.getValue() != 2)
+                allPathsRec(currentY, currentX + 1, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+            if (currentX - 1 > 0 && !maze[currentY][currentX - 1].getOperation().equals("N") && !visitedMatrix[currentY][currentX - 1] && stop.getValue() != 2)
+                allPathsRec(currentY, currentX - 1, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+            if (currentY + 1 < sizeY && !maze[currentY + 1][currentX].getOperation().equals("N") && !visitedMatrix[currentY + 1][currentX] && stop.getValue() != 2)
+                allPathsRec(currentY + 1, currentX, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+            if (currentY - 1 > 0 && !maze[currentY - 1][currentX].getOperation().equals("N") && !visitedMatrix[currentY - 1][currentX] && stop.getValue() != 2)
+                allPathsRec(currentY - 1, currentX, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+        }
+
+        // If we reach this part of the code means that one "thread" got trapped because can't visit other cells or because has not enough points
+        // return without do nothing since it's a non-factible path
+    }
+
+    /*
+     * This is the accessible method to calculate all paths. We did it like this because in the first iteration
+     * we need to set up all the data structures to run the algorithm.
+     * Memory is not optimized since we create copies of the objects in every iteration. When derreferenced
+     * is work of the garbage collector
+     */
+    public List<List<CellAuxiliar>> allPaths(boolean stopWhenOnePathFound)
+    {
+        List<List<CellAuxiliar>> paths = new ArrayList<>();  // All possible paths to the exit. All threads will put their results in here
+        List<CellAuxiliar> currentPath = new ArrayList<>();  // Path that is exploring the current thread
+        int currentX = entryX, currentY = entryY, points = 1;  // Suponemos 1 punto inicial
+        WrapperInt stop = new WrapperInt(0);
+        boolean[][] visitedMatrix = new boolean[sizeY][sizeX];  // Matriz para tener en cuenta las celdas ya visitadas
+        for (int i = 0; i < sizeY; i++)  // visited Matrix initialization
+            for (int j = 0; j < sizeX; j++)
+                visitedMatrix[i][j] = false;
+
+        visitedMatrix[currentY][currentX] = true;  // set the current position as visited
+        points = maze[currentY][currentX].applyOperation(points);
+        currentPath.add(new CellAuxiliar(maze[currentY][currentX], currentY, currentX, euclideanDistance(currentX, currentY, exitX, exitY), points));  // Afegim acasella inicial + dades extra
+
+        // Stop is a behaviour modificator parameter and also a flag to exit the method when one path is found
+        if (stopWhenOnePathFound) stop.setValue(1);
+        else stop.setValue(0);
+        /*
+         * DADES EN LA CRIDA RECURISVA
+         * Passem referencia directa als camins (paths), ja que sempre que modifiquem aquesta llista sera per afegir, de forma que no es causa conflicte
+         * Passem una shallow copy del current path perque així fem una copia de l'ordre que hi ha a la llista pero no dels objecte Cell (que no cal copiar perque son constants)
+         * Passem una deepcopy de la matriu de visitats perque una shallow copy copiaria les referencies dels subarrays degut a que es un array2d, i el que volem son tots els valors
+         */
+        if (currentX + 1 < sizeX && !maze[currentY][currentX + 1].getOperation().equals("N") && stop.getValue() != 2 && points > 0)
+            allPathsRec(currentY, currentX + 1, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+        if (currentX - 1 > 0 && !maze[currentY][currentX - 1].getOperation().equals("N") && stop.getValue() != 2 && points > 0)
+            allPathsRec(currentY, currentX - 1, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+        if (currentY + 1 < sizeY && !maze[currentY + 1][currentX].getOperation().equals("N") && stop.getValue() != 2 && points > 0)
+            allPathsRec(currentY + 1, currentX, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+        if (currentY - 1 > 0 && !maze[currentY - 1][currentX].getOperation().equals("N") && stop.getValue() != 2 && points > 0)
+            allPathsRec(currentY - 1, currentX, (ArrayList)((ArrayList<CellAuxiliar>)currentPath).clone(), points, paths, deepCopy(visitedMatrix), stop);
+
+        return paths;
     }
 
     public List<CellAuxiliar> greedy()
@@ -69,10 +167,9 @@ public class Maze {
         List<CellAuxiliar> path = new ArrayList<>();
         int currentX = entryX, currentY = entryY;
         int points = 1;  // Suponemos 1 punto inicial
-        path.add(new CellAuxiliar(maze[currentY][currentX], currentY, currentX));  // Afegim acasella inicial
+        path.add(new CellAuxiliar(maze[currentY][currentX], currentY, currentX, euclideanDistance(currentX, currentY, exitX, exitY), maze[currentY][currentX].applyOperation(points)));  // Afegim acasella inicial
         for (; exitX != currentX && exitY != currentY;)
         {
-            System.out.println("CurrentY: " + currentY + "currentX: " + currentX);
             points = maze[currentY][currentX].applyOperation(points);  // arribem a la casella i ens apliquem op
 
             List<CellAuxiliar> neighbours = new ArrayList<>();  // Veins del current cell
@@ -94,7 +191,6 @@ public class Maze {
                 neighbours.add(new CellAuxiliar(maze[currentY - 1][currentX], currentY - 1, currentX, euclideanDistance(currentX, currentY - 1, exitX, exitY), maze[currentY - 1][currentX].applyOperation(points)));
             }
 
-            System.out.println("NEIGHBOURS: " + neighbours);
             int numberOfNeighbours = neighbours.size();  // guardem el nombre de veins en una variable fixa
             List<CellAuxiliar> sortedByDistance = new ArrayList<>();
             double minimum = Float.MIN_VALUE;  // Minim valor
@@ -113,7 +209,6 @@ public class Maze {
                 minimum = Float.MIN_VALUE;
             }
 
-            System.out.println("\nsortedbyDistance " + sortedByDistance);
 
             boolean election = false;
             CellAuxiliar currentCell = null;

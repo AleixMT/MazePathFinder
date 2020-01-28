@@ -56,10 +56,9 @@ public class CellAuxiliar {
 
     @Override
     public String toString() {
-        return "cell" + cell +
-                ", (" + posY +
-                ", " + posX + ")" +
-                ", distance=" + distance +
-                ", possiblePoints=" + possiblePoints + "\n";
+        return "Y: " + posY +
+                ", X: " + posX +
+                ", Distance From exit: " + distance +
+                ", Points: " + possiblePoints + "\n";
     }
 }
