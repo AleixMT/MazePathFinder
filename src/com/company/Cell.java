@@ -9,15 +9,12 @@ public class Cell {
      * Operation can be +, -, *, /, or N
      */
     private String operation;
-    private int posX;
-    private int posY;
 
-    public Cell(String operation, int value, int x, int y)
+
+    public Cell(String operation, int value)
     {
         this.value = value;
         this.operation = operation;
-        this.posX = x;
-        this.posY = y;
     }
 
     public int getValue() {
@@ -32,19 +29,19 @@ public class Cell {
     {
         if (operation.equals("+"))
         {
-            points += value;
+             return points + value;
         }
         else if (operation.equals("-"))
         {
-            points -= value;
+            return points - value;
         }
         else if (operation.equals("*"))
         {
-            points *= value;
+            return points * value;
         }
         else if (operation.equals("/"))
         {
-            points /= value;
+            return points / value;
         }
         return points;
     }
