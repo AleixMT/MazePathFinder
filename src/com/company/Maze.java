@@ -81,6 +81,7 @@ public class Maze {
      */
     double euclideanDistance(int v1x, int v1y, int v2x, int v2y)
     {
+        //System.out.println(Math.sqrt((double)((v1x - v2x) * (v1x - v2x) + (v1y - v2y) * (v1y - v2y))));
         return Math.sqrt((double)((v1x - v2x) * (v1x - v2x) + (v1y - v2y) * (v1y - v2y)));
     }
 
@@ -93,8 +94,7 @@ public class Maze {
         {
             currentPath.add(new CellAuxiliar(maze[currentY][currentX], currentY, currentX, euclideanDistance(currentX, currentY, exitX, exitY), maze[currentY][currentX].applyOperation(points)));  // Apuntem
             paths.add(currentPath);  // Add this route to the paths list
-            System.out.println("\nTROBAT CAMÍ");
-            if (stop.getValue() == 1) stop.setValue(2);
+            if (stop.getValue() == 1) stop.setValue(2);  // Enviem senyal a la resta de fils per a que retornin
             return;  // End of recursivity because reached the exit
         }
         else
@@ -167,8 +167,9 @@ public class Maze {
         List<CellAuxiliar> path = new ArrayList<>();
         int currentX = entryX, currentY = entryY;
         int points = 1;  // Suponemos 1 punto inicial
+        CellAuxiliar currentCell = null;
         path.add(new CellAuxiliar(maze[currentY][currentX], currentY, currentX, euclideanDistance(currentX, currentY, exitX, exitY), maze[currentY][currentX].applyOperation(points)));  // Afegim acasella inicial
-        for (; exitX != currentX && exitY != currentY;)
+        while (exitX != currentX || exitY != currentY)
         {
             points = maze[currentY][currentX].applyOperation(points);  // arribem a la casella i ens apliquem op
 
@@ -193,25 +194,25 @@ public class Maze {
 
             int numberOfNeighbours = neighbours.size();  // guardem el nombre de veins en una variable fixa
             List<CellAuxiliar> sortedByDistance = new ArrayList<>();
-            double minimum = Float.MIN_VALUE;  // Minim valor
+            double maximum = Integer.MIN_VALUE;  // Minim valor
             int pos = -1;  // posicio del seguent element
             for (int i = 0; i < numberOfNeighbours; i++)
             {
                 for (int j = 0; j < neighbours.size(); j++)
                 {
-                    if (neighbours.get(j).getDistance() > minimum)
+                    if (neighbours.get(j).getDistance() > maximum)
                     {
-                        minimum = neighbours.get(j).getDistance();
+                        maximum = neighbours.get(j).getDistance();
                         pos = j;
                     }
                 }
                 sortedByDistance.add(neighbours.remove(pos));
-                minimum = Float.MIN_VALUE;
+                maximum = Integer.MIN_VALUE;
             }
 
 
             boolean election = false;
-            CellAuxiliar currentCell = null;
+            currentCell = null;
             while (!election)
             {
                 try {
@@ -233,7 +234,7 @@ public class Maze {
             {
                 currentX = currentCell.getPosX();
                 currentY = currentCell.getPosY();
-                //System.out.println(currentY + " " + currentX);
+
                 path.add(currentCell);
             }
 
